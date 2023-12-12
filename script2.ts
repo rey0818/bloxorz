@@ -39,6 +39,10 @@ class State{
         if(this.dir === 2) ret.push([this.x, this.y+1]);
         return ret;
     }
+
+    isEqual(s: State): boolean{
+        return this.x === s.x && this.y === s.y && this.dir === s.dir;
+    }
 }
 
 const padding = 2;
@@ -47,12 +51,16 @@ class Board {
     height: number;
     tilesize: number;
     player: State;
+    startState: State;
+    endState: State;
     tiles: number[][];
-    constructor(w: number = 10, h: number = 10, t: number = 32, p: State = new State(0, 0, 0)) {
+    constructor(s: State, e: State, w: number = 10, h: number = 10, t: number = 32) {
         this.width = w + 2 * padding;
         this.height = h + 2 * padding;
         this.tilesize = t;
-        this.player = new State(p.x + padding, p.y + padding, p.dir);
+        this.player = new State(s.x + padding, s.y + padding, s.dir);
+        this.startState = new State(s.x + padding, s.y + padding, s.dir);
+        this.endState = new State(e.x + padding, e.y + padding, e.dir);
         this.tiles = [];
         for (let x = 0; x < this.width; x++) {
             this.tiles.push([]);
@@ -61,17 +69,17 @@ class Board {
             }
         }
     }
-
+    
     updateMap(t: number[][]){
         for(let x = padding; x < this.width-padding; x++){
             for(let y = padding; y < this.height-padding; y++){
-                console.log(x, y)
                 this.tiles[x][y] = t[x-padding][y-padding];
             }
         }
+        this.tiles[this.endState.x][this.endState.y] = -1;
     }
 
-    update(key: string): void {
+    move(key: string): void {
         let dir = -1;
         if(key === "ArrowUp") dir = 0;
         if(key === "ArrowDown") dir = 1;
@@ -87,13 +95,34 @@ class Board {
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
                 if (this.tiles[x][y] === 0) continue;
-                ctx.fillRect(y * this.tilesize + 1, x * this.tilesize + 1, this.tilesize - 2, this.tilesize - 2);
-                ctx.fillStyle = "black";
+                else if (this.tiles[x][y] === 1){
+                    ctx.fillRect(y * this.tilesize + 1, x * this.tilesize + 1, this.tilesize - 2, this.tilesize - 2);
+                }
+                else if (this.tiles[x][y] === -1){
+                    ctx.fillStyle = "green";
+                    ctx.fillRect(y * this.tilesize + 1, x * this.tilesize + 1, this.tilesize - 2, this.tilesize - 2);
+                    ctx.fillStyle = "black";
+                }
             }
         }
         ctx.fillStyle = "red";
         for (const [x, y] of this.player.occupied()) {
             ctx.fillRect(y * this.tilesize, x * this.tilesize, this.tilesize, this.tilesize);
+        }
+    }
+
+    update(){
+        const occupied = this.player.occupied();
+        for(const [x, y] of occupied){
+            if(this.tiles[x][y] === 0){
+                alert("You died, you fucking idiot");
+                this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
+                break;
+            }
+        }
+        if(this.player.isEqual(this.endState)){
+            alert("You won! Good Job.");
+            this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
         }
     }
 }
@@ -103,7 +132,7 @@ class Game {
     board: Board;
     constructor() {
         this.canvas = new Canvas();
-        this.board = new Board(10, 10, 32, new State(0, 0, 0));
+        this.board = new Board(new State(0, 0, 0), new State(9, 9, 0), 10, 10, 32);
         this.board.updateMap([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -115,8 +144,12 @@ class Game {
                               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                               [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]);
         document.addEventListener("keydown", (e) => {
-            this.board.update(e.key);
+            this.board.move(e.key);
             this.board.render(this.canvas.ctx);
+            setTimeout(()=>{
+                this.board.update();
+                this.board.render(this.canvas.ctx);
+            }, 10);
         });
         this.board.render(this.canvas.ctx);
     }
