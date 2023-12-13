@@ -1,14 +1,5 @@
-class Canvas {
-    constructor() {
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        this.canvas.style.border = "1px solid black";
-        this.canvas.style.backgroundColor = "white";
-        document.body.appendChild(this.canvas);
-        this.ctx = this.canvas.getContext("2d");
-    }
-}
+//@ts-ignore
+import * as THREE from 'three';
 const deltaPos = [
     [[-2, 0, 1], [1, 0, 1], [0, -2, 2], [0, 1, 2]],
     [[-1, 0, 0], [2, 0, 0], [0, -1, 1], [0, 1, 1]],
@@ -35,16 +26,18 @@ class State {
     isEqual(s) {
         return this.x === s.x && this.y === s.y && this.dir === s.dir;
     }
+    copy() {
+        return new State(this.x, this.y, this.dir);
+    }
 }
 const padding = 2;
 class Board {
-    constructor(s, e, w = 10, h = 10, t = 32) {
-        this.width = w + 2 * padding;
-        this.height = h + 2 * padding;
+    constructor(w, h, t) {
+        w = w + 2 * padding;
+        h = h + 2 * padding;
+        this.width = w;
+        this.height = h;
         this.tilesize = t;
-        this.player = new State(s.x + padding, s.y + padding, s.dir);
-        this.startState = new State(s.x + padding, s.y + padding, s.dir);
-        this.endState = new State(e.x + padding, e.y + padding, e.dir);
         this.tiles = [];
         for (let x = 0; x < this.width; x++) {
             this.tiles.push([]);
@@ -52,14 +45,49 @@ class Board {
                 this.tiles[x].push(0);
             }
         }
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        document.body.appendChild(this.canvas);
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas });
+        const cw = (w + h) * t, ch = (w + h) * t, near = 0.1, far = 100;
+        this.camera = new THREE.OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, near, far);
+        this.camera.position.set(9, 7, 9);
+        this.camera.lookAt(0, 0, 0);
+        this.scene = new THREE.Scene();
+        this.light = new THREE.DirectionalLight(0xffffff, 1);
+        this.light.position.set(3, 3, 2);
+        this.scene.add(this.light);
     }
-    updateMap(t) {
+    updateMap(s, e, t) {
+        this.player = new State(s.x + padding, s.y + padding, s.dir);
+        this.startState = new State(s.x + padding, s.y + padding, s.dir);
+        this.endState = new State(e.x + padding, e.y + padding, e.dir);
         for (let x = padding; x < this.width - padding; x++) {
             for (let y = padding; y < this.height - padding; y++) {
                 this.tiles[x][y] = t[x - padding][y - padding];
             }
         }
         this.tiles[this.endState.x][this.endState.y] = -1;
+        this.tileMeshes = [];
+        const tilegeometry = new THREE.BoxGeometry(this.tilesize * 0.9, this.tilesize * 0.3, this.tilesize * 0.9);
+        const tilematerial = new THREE.MeshPhongMaterial({ color: 0x44dd77 });
+        const endmaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
+        const offsetX = this.width * this.tilesize / 2;
+        const offsetY = this.height * this.tilesize / 2;
+        for (let x = 0; x < this.width; x++) {
+            this.tileMeshes.push([]);
+            for (let y = 0; y < this.height; y++) {
+                if (this.tiles[x][y] === 0) {
+                    this.tileMeshes[x].push(null);
+                    continue;
+                }
+                const cube = new THREE.Mesh(tilegeometry, this.tiles[x][y] === -1 ? endmaterial : tilematerial);
+                cube.position.set(y * this.tilesize - offsetY, 0, x * this.tilesize - offsetX);
+                this.tileMeshes[x].push(cube);
+                this.scene.add(cube);
+            }
+        }
     }
     move(key) {
         let dir = -1;
@@ -75,28 +103,6 @@ class Board {
             return;
         this.player = this.player.move(dir);
     }
-    render(ctx) {
-        ctx.clearRect(0, 0, this.width * this.tilesize, this.height * this.tilesize);
-        ctx.fillStyle = "black";
-        for (let x = 0; x < this.width; x++) {
-            for (let y = 0; y < this.height; y++) {
-                if (this.tiles[x][y] === 0)
-                    continue;
-                else if (this.tiles[x][y] === 1) {
-                    ctx.fillRect(y * this.tilesize + 1, x * this.tilesize + 1, this.tilesize - 2, this.tilesize - 2);
-                }
-                else if (this.tiles[x][y] === -1) {
-                    ctx.fillStyle = "green";
-                    ctx.fillRect(y * this.tilesize + 1, x * this.tilesize + 1, this.tilesize - 2, this.tilesize - 2);
-                    ctx.fillStyle = "black";
-                }
-            }
-        }
-        ctx.fillStyle = "red";
-        for (const [x, y] of this.player.occupied()) {
-            ctx.fillRect(y * this.tilesize, x * this.tilesize, this.tilesize, this.tilesize);
-        }
-    }
     update() {
         const occupied = this.player.occupied();
         for (const [x, y] of occupied) {
@@ -111,12 +117,15 @@ class Board {
             this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
         }
     }
+    render() {
+        this.renderer.render(this.scene, this.camera);
+    }
 }
 class Game {
     constructor() {
-        this.canvas = new Canvas();
-        this.board = new Board(new State(0, 0, 0), new State(9, 9, 0), 10, 10, 32);
-        this.board.updateMap([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        this.board = new Board(10, 10, 0.7);
+        this.board.updateMap(new State(0, 0, 0), new State(9, 9, 0), [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
@@ -125,16 +134,17 @@ class Game {
             [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]);
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ]);
         document.addEventListener("keydown", (e) => {
             this.board.move(e.key);
-            this.board.render(this.canvas.ctx);
+            this.board.render();
             setTimeout(() => {
                 this.board.update();
-                this.board.render(this.canvas.ctx);
+                this.board.render();
             }, 10);
         });
-        this.board.render(this.canvas.ctx);
+        this.board.render();
     }
 }
 const game = new Game();
