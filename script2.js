@@ -52,7 +52,7 @@ class Board {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas });
         const cw = (w + h) * t, ch = (w + h) * t, near = 0.1, far = 100;
         this.camera = new THREE.OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, near, far);
-        this.camera.position.set(9, 11, 9);
+        this.camera.position.set(6, 11, 9);
         this.camera.lookAt(0, 0, 0);
         this.scene = new THREE.Scene();
         this.light = new THREE.DirectionalLight(0xffffff, 1);
