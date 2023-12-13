@@ -101,6 +101,7 @@ class Board {
         const occupied = this.player.occupied();
         for (const [x, y] of occupied) {
             if (this.tiles[x][y] === 0) {
+                document.getElementById('died').play();
                 alert("You died, you fucking idiot");
                 this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
                 break;

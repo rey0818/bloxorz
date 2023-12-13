@@ -58,3 +58,15 @@ function createGrid() {
    }
 var grid = createGrid() ;
 drawGrid(grid);
+
+/*
+<h1>Number of Key Presses: <span id="count">0</span></h1>
+let count = 0;
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                count++;
+                document.getElementById('count').innerText = count;
+            }
+        });
+*/
