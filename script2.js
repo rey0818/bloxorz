@@ -47,12 +47,14 @@ class Board {
         const cw = (w + h) * t, ch = cw * (this.canvas.height / this.canvas.width), near = 0.1, far = 100;
         console.log(cw, ch);
         this.camera = new THREE.OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, near, far);
-        this.camera.position.set(5, 7, 9);
+        this.camera.position.set(3, 7, 9);
         this.camera.lookAt(0, 0, 0);
         this.scene = new THREE.Scene();
         this.light = new THREE.DirectionalLight(0xffffff, 1);
         this.light.position.set(4, 3, 2);
         this.scene.add(this.light);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+        this.scene.add(ambient);
     }
     updateMap(s, e, t) {
         this.player = new State(s.x + padding, s.y + padding, s.dir);
@@ -92,6 +94,7 @@ class Board {
         if (deg > 90) {
             this.onCooldown = false;
             this.player = this.player.move(dir);
+            this.setPlayerPos(this.player, 0, 0, false);
             this.update();
             return;
         }
@@ -107,7 +110,6 @@ class Board {
         const sinTheta = Math.sin(theta);
         rx = cosTheta * x + sinTheta * y;
         ry = cosTheta * y - sinTheta * x;
-        console.log(rx, ry);
         const rev = dir === 0 || dir === 2 ? 1 : -1;
         if (s.dir === 0 && (dir === 0 || dir === 1)) {
             this.playerMesh.position.set(this.player.y * this.tilesize - this.offsetY, ry * this.tilesize, (this.player.x - rev * (0.5 + rx)) * this.tilesize - this.offsetX);
@@ -137,7 +139,7 @@ class Board {
         if (!animate)
             return;
         requestAnimationFrame(() => {
-            this.setPlayerPos(s, dir, deg + 3);
+            this.setPlayerPos(s, dir, deg + 5);
         });
     }
     move(key) {
