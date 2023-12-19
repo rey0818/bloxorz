@@ -225,4 +225,8 @@ class Game {
     }
 }
 
-const game = new Game();
+const startScreen = document.getElementById('start-screen');
+document.getElementById('start-button').addEventListener('click', function() {
+    startScreen.remove();
+    const game = new Game();
+});

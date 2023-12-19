@@ -1,0 +1,17 @@
+* {
+    margin: 0;
+    overflow: hidden;
+  }
+#start-screen {
+    position: fixed;
+    display: grid;
+    /*center divs*/
+    place-items: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* Add your desired styles to beautify the start screen */
+}
+#start-button{
+    margin: 1vmax;
+}

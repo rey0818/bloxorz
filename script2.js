@@ -15,6 +15,7 @@ class State {
         const [dx, dy, dir] = deltaPos[this.dir][d];
         return new State(this.x + dx, this.y + dy, dir);
     }
+    
     occupied() {
         const ret = [[this.x, this.y]];
         if (this.dir === 1)
@@ -189,11 +190,11 @@ class Game {
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
             [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+            [1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
             [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+            [1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
+            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
         ]);
         document.addEventListener("keydown", (e) => {
             this.board.move(e.key);
@@ -201,4 +202,61 @@ class Game {
         this.board.render();
     }
 }
-const game = new Game();
+
+// document.getElementById('start-button').addEventListener('click', function() {
+//     var startScreen = document.getElementById('start-screen');
+//     startScreen.remove();
+//     const game = new Game();
+//   });
+
+var canvas = document.createElement('canvas');
+  
+
+var ctx = canvas.getContext('2d');
+document.body.appendChild(canvas);
+var scale = window.devicePixelRatio; // 改變這個值來調整解析度
+canvas.width = window.innerWidth * scale;
+canvas.height = window.innerHeight * scale;
+
+// 設置顯示大小
+canvas.style.width = window.innerWidth + 'px';
+canvas.style.height = window.innerHeight + 'px';
+
+// 縮放 context 以匹配解析度
+ctx.scale(scale, scale);
+// 獲取 canvas 和 context
+
+
+// 繪製起始介面
+ctx.fillStyle = 'black'; // 設置填充顏色為黑色
+ctx.fillRect(0, 0, canvas.width, canvas.height); // 繪製一個填滿整個 canvas 的矩形
+
+// 繪製標題
+ctx.font = '50px Arial';
+ctx.fillStyle = 'white';
+ctx.textAlign = 'center';
+ctx.fillText('爛你爛!!!!', canvas.width / 2, canvas.height / 2 - 50); // 在 canvas 中央上方繪製標題
+
+// 繪製開始按鈕
+ctx.beginPath();
+ctx.rect(canvas.width / 2 - 50, canvas.height / 2, 100, 50); // 繪製一個矩形在 canvas 中央
+ctx.fillStyle = 'blue'; // 設置填充顏色為藍色
+ctx.fill(); // 填充矩形
+ctx.closePath();
+
+// 添加按鈕文字
+ctx.font = '20px Arial';
+ctx.fillStyle = 'white';
+ctx.fillText('開始', canvas.width / 2, canvas.height / 2 + 30); // 在矩形內部繪製文字
+
+// 監聽點擊事件
+canvas.addEventListener('click', function(event) {
+  var x = event.clientX - canvas.offsetLeft;
+  var y = event.clientY - canvas.offsetTop;
+
+  // 檢查點擊是否在開始按鈕上
+  if (x > canvas.width / 2 - 50 && x < canvas.width / 2 + 50 && y > canvas.height / 2 && y < canvas.height / 2 + 50) {
+    canvas.remove();
+    const game=new Game();
+  }
+});
