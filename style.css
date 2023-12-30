@@ -1,7 +1,17 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    background-image: linear-gradient(-225deg, #2CD8D5 0%, #C5C1FF 56%, #FFBAC3 100%);
+    /* background: linear-gradient(#ebbba7, #cfc7f8); */
+}
 * {
     margin: 0;
-    overflow: hidden;
+    overflow: hidden; 
   }
+.h1font{
+    font-weight: 1000;
+    color: white;
+}
 #start-screen {
     position: fixed;
     display: grid;
@@ -10,8 +20,35 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    /* Add your desired styles to beautify the start screen */
+    text-align: left;  /* 新增這一行 */
 }
 #start-button{
     margin: 1vmax;
+    font-weight: 1000;
+    color:white;
+    border: 2px solid white;
+}
+#audio-button{
+    font-weight: 1000;
+    color:white;
+    border: 2px solid white;
+}
+#setting {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+}
+#levels {
+    position: fixed;
+    width:50vmax;
+    height:30vmax;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: black;
+    color:white;
+    text-align: center;
+    display: flex;  
+    align-items: center; 
+    justify-content: center;  
 }
