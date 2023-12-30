@@ -5,30 +5,6 @@ const deltaPos = [
     [[-1, 0, 0], [2, 0, 0], [0, -1, 1], [0, 1, 1]],
     [[-1, 0, 2], [1, 0, 2], [0, -1, 0], [0, 2, 0]]
 ];
-const map =[[
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-            [1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
-            [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
-            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1]],
-            [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-            [1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
-            [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
-            [0, 0, 1, 1, 1, 1, 1, 0, 1, 1]
-            ]
-]
 class State {
     constructor(x, y, dir) {
         this.x = x;
@@ -39,7 +15,6 @@ class State {
         const [dx, dy, dir] = deltaPos[this.dir][d];
         return new State(this.x + dx, this.y + dy, dir);
     }
-    
     occupied() {
         const ret = [[this.x, this.y]];
         if (this.dir === 1)
@@ -57,20 +32,16 @@ class State {
 }
 const padding = 2;
 class Board {
-    constructor(w, h, t) {
+    constructor(w, h, t, canvas) {
         w = w + 2 * padding;
         h = h + 2 * padding;
         this.width = w;
         this.height = h;
         this.tilesize = t;
         this.onCooldown = false;
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        document.body.appendChild(this.canvas);
+        this.canvas = canvas;
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas });
         const cw = (w + h) * t, ch = cw * (this.canvas.height / this.canvas.width), near = 0.1, far = 100;
-        console.log(cw, ch);
         this.camera = new THREE.OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, near, far);
         this.camera.position.set(3, 7, 9);
         this.camera.lookAt(0, 0, 0);
@@ -80,6 +51,7 @@ class Board {
         this.scene.add(this.light);
         const ambient = new THREE.AmbientLight(0xffffff, 0.3);
         this.scene.add(ambient);
+        this.diedSound = new Audio('music1.mp3');
     }
     updateMap(s, e, t) {
         this.player = new State(s.x + padding, s.y + padding, s.dir);
@@ -188,7 +160,7 @@ class Board {
         const occupied = this.player.occupied();
         for (const [x, y] of occupied) {
             if (this.tiles[x][y] === 0) {
-                document.getElementById('died').play();
+                this.diedSound.play();
                 alert("You died, you fucking idiot");
                 this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
                 this.setPlayerPos(this.player, 0, 0, false);
@@ -207,43 +179,44 @@ class Board {
 }
 class Game {
     constructor() {
-        this.board = new Board(10, 10, 0.7);
-        this.board.updateMap(new State(0, 0, 0), new State(9, 9, 0), [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-            [1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
-            [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 1, 0, 0, 1, 1, 1, 1, 1],
-            [0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
-        ]);
-        document.addEventListener("keydown", (e) => {
+        this.keydown = (e) => {
             this.board.move(e.key);
-        });
+        };
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        document.body.appendChild(this.canvas);
+        this.canvas.hidden = true;
+    }
+    addMap(s, e, m) {
+        this.board = new Board(10, 10, 0.7, this.canvas);
+        this.board.updateMap(s, e, m);
         this.board.render();
+        if (this.added)
+            return;
+        document.addEventListener("keydown", this.keydown, false);
+        this.canvas.hidden = false;
+    }
+    removeMap() {
+        if (!this.added)
+            return;
+        document.removeEventListener("keydown", this.keydown, false);
+        this.canvas.hidden = true;
     }
 }
-// function newlevel(i) {
-//     // 移除所有關卡的畫面
-//     var levelsDiv = document.getElementById('levels');
-//     levelsDiv.remove();
-//     const game = new Game();
-// }
-document.getElementById('start-button').addEventListener('click', function() {
+const game = new Game();
+document.getElementById('start-button').addEventListener('click', function () {
     document.getElementById("start-screen").remove();
-    const game = new Game();
-  });
-document.getElementById('setting-button').addEventListener('click',function() {
-    // var levelsHtml = '';
-    // for (var i = 1; i <= 10; i++) {
-    //     levelsHtml += `<div class="level" onclick="newlevel(${i})">關卡 ${i}</div>`;
-    // }
-    // levelsHtml += `<button id="setting-button" class="btn btn-outline-secondary"><i class="bibi-gear-fill"></i></button>`;
-    // var levelsDiv = document.createElement('div');
-    // levelsDiv.id = 'levels';
-    // levelsDiv.innerHTML = levelsHtml;
-    // document.body.appendChild(levelsDiv);
+    game.addMap(new State(0, 0, 0), new State(9, 9, 0), [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ]);
 });

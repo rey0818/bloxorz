@@ -5,7 +5,7 @@ const deltaPos = [ // 0: up, 1: down, 2: left, 3: right
     [[-2, 0, 1], [1, 0, 1], [0, -2, 2], [0, 1, 2]],
     [[-1, 0, 0], [2, 0, 0], [0, -1, 1], [0, 1, 1]],
     [[-1, 0, 2], [1, 0, 2], [0, -1, 0], [0, 2, 0]]
-]
+];
 
 class State {
     x: number;
@@ -47,6 +47,7 @@ class Board {
     scene: THREE.Scene;
     tileMeshes: [THREE.Mesh | null][][];
     playerMesh: THREE.Mesh;
+    diedSound: HTMLAudioElement;
     onCooldown: boolean;
     offsetX: number;
     offsetY: number;
@@ -57,7 +58,7 @@ class Board {
     player: State;
     startState: State;
     endState: State;
-    constructor(w: number, h: number, t: number) {
+    constructor(w: number, h: number, t: number, canvas: HTMLCanvasElement) {
         w = w + 2 * padding;
         h = h + 2 * padding;
         this.width = w;
@@ -65,13 +66,9 @@ class Board {
         this.tilesize = t;
         this.onCooldown = false;
 
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
-        document.body.appendChild(this.canvas);
+        this.canvas = canvas;
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas });
         const cw = (w + h) * t, ch = cw * (this.canvas.height / this.canvas.width), near = 0.1, far = 100;
-        console.log(cw, ch)
         this.camera = new THREE.OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, near, far);
         this.camera.position.set(3, 7, 9);
         this.camera.lookAt(0, 0, 0);
@@ -81,6 +78,7 @@ class Board {
         this.scene.add(this.light);
         const ambient = new THREE.AmbientLight(0xffffff, 0.3);
         this.scene.add(ambient);
+        this.diedSound = new Audio('music1.mp3');
     }
 
     updateMap(s: State, e: State, t: number[][]) {
@@ -184,7 +182,7 @@ class Board {
         const occupied = this.player.occupied();
         for (const [x, y] of occupied) {
             if (this.tiles[x][y] === 0) {
-                (<HTMLAudioElement>document.getElementById('died')).play();
+                this.diedSound.play();
                 alert("You died, you fucking idiot");
                 this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
                 this.setPlayerPos(this.player, 0, 0, false);
@@ -205,28 +203,48 @@ class Board {
 
 class Game {
     board: Board;
+    canvas: HTMLCanvasElement;
+    added: boolean;
     constructor() {
-        this.board = new Board(10, 10, 0.7);
-        this.board.updateMap(new State(0, 0, 0), new State(9, 9, 0), [
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]);
-        document.addEventListener("keydown", (e) => {
-            this.board.move(e.key);
-        });
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
+        document.body.appendChild(this.canvas);
+        this.canvas.hidden = true;
+    }
+
+    keydown = (e: KeyboardEvent) => {
+        this.board.move(e.key);
+    }
+
+    addMap(s: State, e: State, m: number[][]) {
+        this.board = new Board(10, 10, 0.7, this.canvas);
+        this.board.updateMap(s, e, m);
         this.board.render();
+        if (this.added) return;
+        document.addEventListener("keydown", this.keydown, false);
+        this.canvas.hidden = false;
+    }
+
+    removeMap() {
+        if (!this.added) return;
+        document.removeEventListener("keydown", this.keydown, false);
+        this.canvas.hidden = true;
     }
 }
 
-const startScreen = document.getElementById('start-screen');
+const game = new Game();
 document.getElementById('start-button').addEventListener('click', function() {
-    startScreen.remove();
-    const game = new Game();
+    document.getElementById("start-screen").remove();
+    game.addMap(new State(0, 0, 0), new State(9, 9, 0), [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]);
 });
