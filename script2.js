@@ -199,6 +199,7 @@ class Game {
         this.dialogElement = document.getElementById("dialog");
         for (let i = 0; i < this.levels.length; i++) {
             const btn = document.createElement('button');
+            btn.className = 'levelbtn' ;
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
                 this.updateMap(i);
@@ -251,19 +252,52 @@ const levels = [
         [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 1]
+    ]),
+    new Level(new State(0, 3, 0), new State(9, 6, 0), [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        [1, 0, 0, 1, 1, 1, 0, 1, 0, 0],
+        [1, 0, 0, 0, 1, 1, 0, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
+        [1, 0, 0, 0, 0, 1, 1, 0, 0, 1],
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1]
+    ]),
+    new Level(new State(0, 2, 0), new State(9, 6, 0), [
+        [1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+        [1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+        [1, 1, 1, 0, 0, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 0]
     ])
+
 ];
 const game = new Game(levels);
 game.updateMap(0);
 document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").remove();
+    document.getElementById("start-screen").style.display = "none";
     game.show();
 });
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
+const homebtn = document.getElementById("homebtn");
 showBtn.addEventListener("click", function () {
     game.dialogElement.showModal();
 });
 closeBtn.addEventListener("click", function () {
     game.dialogElement.close();
+});
+homebtn.addEventListener("click", function () {
+    // ctx.clearRect(0, 0, canvas.width, canvas.height);
+    game.hide();
+    game.dialogElement.close();
+    const startScreen = document.getElementById("start-screen");
+    startScreen.style.display = "grid";
 });
