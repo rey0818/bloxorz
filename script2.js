@@ -280,7 +280,6 @@ class Game {
         this.dialogElement = document.getElementById("dialog");
         for (let i = 0; i < this.levels.length; i++) {
             const btn = document.createElement('button');
-            btn.className = 'levelbtn' ;
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
                 this.updateMap(i);
@@ -358,29 +357,18 @@ const levels = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 0]
     ])
-
 ];
 const game = new Game(levels);
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
 game.updateMap(0);
 document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("start-screen").remove();
     game.show();
 });
-const showBtn = document.getElementById("setting-button");
-const closeBtn = document.querySelector(".close");
-const homebtn = document.getElementById("homebtn");
 showBtn.addEventListener("click", function () {
     game.dialogElement.showModal();
 });
 closeBtn.addEventListener("click", function () {
     game.dialogElement.close();
-});
-homebtn.addEventListener("click", function () {
-    // ctx.clearRect(0, 0, canvas.width, canvas.height);
-    game.hide();
-    game.dialogElement.close();
-    const startScreen = document.getElementById("start-screen");
-    startScreen.style.display = "grid";
 });
