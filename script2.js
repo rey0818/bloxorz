@@ -53,7 +53,7 @@ class Board {
         this.scene.add(ambient);
         this.diedSound = new Audio('music1.mp3');
     }
-    updateMap(s, e, t) {
+    initMap(s, e, t) {
         this.player = new State(s.x + padding, s.y + padding, s.dir);
         this.startState = new State(s.x + padding, s.y + padding, s.dir);
         this.endState = new State(e.x + padding, e.y + padding, e.dir);
@@ -177,8 +177,15 @@ class Board {
         this.renderer.render(this.scene, this.camera);
     }
 }
+class Level {
+    constructor(s, e, map) {
+        this.map = map;
+        this.s = s;
+        this.e = e;
+    }
+}
 class Game {
-    constructor() {
+    constructor(lvls) {
         this.keydown = (e) => {
             this.board.move(e.key);
         };
@@ -187,27 +194,41 @@ class Game {
         this.canvas.height = window.innerHeight;
         document.body.appendChild(this.canvas);
         this.canvas.hidden = true;
+        this.shown = false;
+        this.levels = lvls;
+        this.dialogElement = document.getElementById("dialog");
+        for (let i = 0; i < this.levels.length; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = `Level ${i + 1}`;
+            btn.addEventListener('click', () => {
+                this.updateMap(i);
+                this.dialogElement.close();
+            });
+            document.querySelector('.lvl-container').appendChild(btn);
+        }
     }
-    addMap(s, e, m) {
+    updateMap(index) {
         this.board = new Board(10, 10, 0.7, this.canvas);
-        this.board.updateMap(s, e, m);
+        this.board.initMap(this.levels[index].s, this.levels[index].e, this.levels[index].map);
         this.board.render();
-        if (this.added)
+    }
+    show() {
+        if (this.shown)
             return;
         document.addEventListener("keydown", this.keydown, false);
         this.canvas.hidden = false;
+        this.shown = true;
     }
-    removeMap() {
-        if (!this.added)
+    hide() {
+        if (!this.shown)
             return;
         document.removeEventListener("keydown", this.keydown, false);
         this.canvas.hidden = true;
+        this.shown = false;
     }
 }
-const game = new Game();
-document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").remove();
-    game.addMap(new State(0, 0, 0), new State(9, 9, 0), [
+const levels = [
+    new Level(new State(0, 0, 0), new State(9, 9, 0), [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -218,5 +239,31 @@ document.getElementById('start-button').addEventListener('click', function () {
         [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]);
+    ]),
+    new Level(new State(0, 3, 0), new State(9, 6, 0), [
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1]
+    ])
+];
+const game = new Game(levels);
+game.updateMap(0);
+document.getElementById('start-button').addEventListener('click', function () {
+    document.getElementById("start-screen").remove();
+    game.show();
+});
+const showBtn = document.getElementById("setting-button");
+const closeBtn = document.querySelector(".close");
+showBtn.addEventListener("click", function () {
+    game.dialogElement.showModal();
+});
+closeBtn.addEventListener("click", function () {
+    game.dialogElement.close();
 });

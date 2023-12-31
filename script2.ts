@@ -81,7 +81,7 @@ class Board {
         this.diedSound = new Audio('music1.mp3');
     }
 
-    updateMap(s: State, e: State, t: number[][]) {
+    initMap(s: State, e: State, t: number[][]) {
         this.player = new State(s.x + padding, s.y + padding, s.dir);
         this.startState = new State(s.x + padding, s.y + padding, s.dir);
         this.endState = new State(e.x + padding, e.y + padding, e.dir);
@@ -118,7 +118,7 @@ class Board {
     }
 
     setPlayerPos(s: State, dir: number, deg: number, animate: boolean = true) {
-        if(deg > 90){
+        if (deg > 90) {
             this.onCooldown = false;
             this.player = this.player.move(dir);
             this.setPlayerPos(this.player, 0, 0, false);
@@ -160,9 +160,9 @@ class Board {
             this.playerMesh.rotation.set(-rev * theta, 0, -Math.PI / 2);
         }
         this.render();
-        if(!animate) return;
+        if (!animate) return;
         requestAnimationFrame(() => {
-            this.setPlayerPos(s, dir, deg+5);
+            this.setPlayerPos(s, dir, deg + 5);
         });
     }
 
@@ -201,42 +201,71 @@ class Board {
     }
 }
 
+class Level {
+    s: State;
+    e: State;
+    map: number[][];
+    constructor(s: State, e: State, map: number[][]) {
+        this.map = map;
+        this.s = s;
+        this.e = e;
+    }
+}
+
 class Game {
     board: Board;
     canvas: HTMLCanvasElement;
-    added: boolean;
-    constructor() {
+    shown: boolean;
+    levels: Level[];
+    dialogElement: HTMLDialogElement;
+
+    constructor(lvls: Level[]) {
         this.canvas = document.createElement('canvas');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
         document.body.appendChild(this.canvas);
         this.canvas.hidden = true;
+        this.shown = false;
+        this.levels = lvls;
+        this.dialogElement = <HTMLDialogElement>document.getElementById("dialog");
+        for (let i = 0; i < this.levels.length; i++) {
+            const btn = document.createElement('button');
+            btn.innerText = `Level ${i + 1}`;
+            btn.addEventListener('click', () => {
+                this.updateMap(i);
+                this.dialogElement.close();
+            });
+            document.querySelector('.lvl-container').appendChild(btn);
+        }
     }
 
     keydown = (e: KeyboardEvent) => {
         this.board.move(e.key);
     }
 
-    addMap(s: State, e: State, m: number[][]) {
+    updateMap(index: number) {
         this.board = new Board(10, 10, 0.7, this.canvas);
-        this.board.updateMap(s, e, m);
+        this.board.initMap(this.levels[index].s, this.levels[index].e, this.levels[index].map);
         this.board.render();
-        if (this.added) return;
-        document.addEventListener("keydown", this.keydown, false);
-        this.canvas.hidden = false;
     }
 
-    removeMap() {
-        if (!this.added) return;
+    show() {
+        if (this.shown) return;
+        document.addEventListener("keydown", this.keydown, false);
+        this.canvas.hidden = false;
+        this.shown = true;
+    }
+
+    hide() {
+        if (!this.shown) return;
         document.removeEventListener("keydown", this.keydown, false);
         this.canvas.hidden = true;
+        this.shown = false;
     }
 }
 
-const game = new Game();
-document.getElementById('start-button').addEventListener('click', function() {
-    document.getElementById("start-screen").remove();
-    game.addMap(new State(0, 0, 0), new State(9, 9, 0), [
+const levels = [
+    new Level(new State(0, 0, 0), new State(9, 9, 0), [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -246,5 +275,34 @@ document.getElementById('start-button').addEventListener('click', function() {
         [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]);
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]),
+    new Level(new State(0, 3, 0), new State(9, 6, 0), [
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1]])
+];
+
+const game = new Game(levels);
+const showBtn = <HTMLButtonElement>document.getElementById("setting-button");
+const closeBtn = <HTMLButtonElement>document.querySelector(".close");
+game.updateMap(0);
+
+document.getElementById('start-button').addEventListener('click', function () {
+    document.getElementById("start-screen").remove();
+    game.show();
+});
+
+showBtn.addEventListener("click", function () {
+    game.dialogElement.showModal();
+});
+
+closeBtn.addEventListener("click", function () {
+    game.dialogElement.close();
 });
