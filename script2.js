@@ -1,5 +1,7 @@
 //@ts-ignore
 import * as THREE from 'three';
+const omega = 5; //degrees per frame
+const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
 const deltaPos = [
     [[-2, 0, 1], [1, 0, 1], [0, -2, 2], [0, 1, 2]],
     [[-1, 0, 0], [2, 0, 0], [0, -1, 1], [0, 1, 1]],
@@ -89,13 +91,17 @@ class Board {
     }
     setPlayerPos(s, dir, deg, animate = true) {
         if (deg > 90) {
-            this.onCooldown = false;
             this.player = this.player.move(dir);
             this.setPlayerPos(this.player, 0, 0, false);
-            this.update();
+            if (!this.valid(this.player))
+                this.initfall(dir);
+            else {
+                this.onCooldown = false;
+                this.update();
+            }
             return;
         }
-        const theta = deg * Math.PI / 180;
+        const theta = Board.rad(deg);
         let x = 0, y = 0, rx = 0, ry = 0;
         if (s.dir === 0)
             x = -0.5, y = 1;
@@ -136,8 +142,90 @@ class Board {
         if (!animate)
             return;
         requestAnimationFrame(() => {
-            this.setPlayerPos(s, dir, deg + 5);
+            this.setPlayerPos(s, dir, deg + omega);
         });
+    }
+    initfall(dir) {
+        const v = this.tilesize * Board.rad(omega); // v=rw
+        if (this.player.dir === 0)
+            this.fall([dirs[dir][0] * v, -v / 2, dirs[dir][1] * v], dir);
+        else {
+            const occupied = this.player.occupied();
+            for (let i = 0; i < occupied.length; i++) {
+                const [x, y] = occupied[i];
+                if (this.tiles[x][y] === 1) {
+                    if (i === 0)
+                        this.trip((this.player.dir - 1) * 2 + 1, 0);
+                    else
+                        this.trip((this.player.dir - 1) * 2, 0);
+                    return;
+                }
+            }
+            const roll = Math.floor(dir / 2) + 1 !== this.player.dir;
+            if (roll)
+                this.fall([dirs[dir][0] * v / 2, -v / 2, dirs[dir][1] * v / 2], dir);
+            else
+                this.fall([dirs[dir][0] * v / 2, -v, dirs[dir][1] * v / 2], dir);
+        }
+    }
+    trip(dir, deg) {
+        if (deg > 90) {
+            const v = this.tilesize * Board.rad(omega);
+            this.fall([0, -v / 2, 0], dir);
+            return;
+        }
+        const theta = Board.rad(deg);
+        const rx = Math.sin(theta) * 0.5;
+        const ry = Math.cos(theta) * 0.5;
+        let pos = [this.player.y * this.tilesize - this.offsetY, 0, this.player.x * this.tilesize - this.offsetX];
+        if (this.player.dir === 1)
+            pos[2] += this.tilesize / 2;
+        if (this.player.dir === 2)
+            pos[0] += this.tilesize / 2;
+        pos[2 - Math.floor(dir / 2) * 2] += rx * this.tilesize * (dir % 2 === 0 ? -1 : 1);
+        pos[1] += ry * this.tilesize;
+        this.playerMesh.position.set(pos[0], pos[1], pos[2]);
+        if (dir === 0)
+            this.playerMesh.rotation.set(Math.PI / 2 - theta, 0, 0);
+        if (dir === 1)
+            this.playerMesh.rotation.set(Math.PI / 2 + theta, 0, 0);
+        if (dir === 2)
+            this.playerMesh.rotation.set(0, 0, Math.PI / 2 + theta);
+        if (dir === 3)
+            this.playerMesh.rotation.set(0, 0, Math.PI / 2 - theta);
+        this.render();
+        requestAnimationFrame(() => {
+            this.trip(dir, deg + omega);
+        });
+    }
+    fall(vel, dir) {
+        if (vel[1] < -2) {
+            this.onCooldown = false;
+            this.restart();
+            return;
+        }
+        this.playerMesh.position.x += vel[2];
+        this.playerMesh.position.y += vel[1];
+        this.playerMesh.position.z += vel[0];
+        this.playerMesh.rotateOnWorldAxis(new THREE.Vector3(1, 0, 0), dirs[dir][0] * Board.rad(omega));
+        this.playerMesh.rotateOnWorldAxis(new THREE.Vector3(0, 0, 1), -dirs[dir][1] * Board.rad(omega));
+        this.render();
+        requestAnimationFrame(() => {
+            this.fall([vel[0], vel[1] - 0.03, vel[2]], dir);
+        });
+    }
+    update() {
+        if (this.player.isEqual(this.endState)) {
+            alert("You won! Good Job.");
+            this.player = this.startState.copy();
+            this.setPlayerPos(this.player, 0, 0, false);
+        }
+    }
+    restart() {
+        this.diedSound.play();
+        alert("You died, you fucking idiot");
+        this.player = this.startState.copy();
+        this.setPlayerPos(this.player, 0, 0, false);
     }
     move(key) {
         let dir = -1;
@@ -176,6 +264,16 @@ class Board {
     render() {
         this.renderer.render(this.scene, this.camera);
     }
+    valid(s) {
+        const occupied = s.occupied();
+        for (const [x, y] of occupied)
+            if (this.tiles[x][y] === 0)
+                return false;
+        return true;
+    }
+    static rad(deg) {
+        return deg * Math.PI / 180;
+    }
 }
 class Level {
     constructor(s, e, map) {
@@ -199,7 +297,6 @@ class Game {
         this.dialogElement = document.getElementById("dialog");
         for (let i = 0; i < this.levels.length; i++) {
             const btn = document.createElement('button');
-            btn.className = 'levelbtn' ;
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
                 this.updateMap(i);
@@ -229,18 +326,6 @@ class Game {
     }
 }
 const levels = [
-    new Level(new State(0, 0, 0), new State(9, 9, 0), [
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    ]),
     new Level(new State(0, 3, 0), new State(9, 6, 0), [
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -252,6 +337,18 @@ const levels = [
         [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 1]
+    ]),
+    new Level(new State(7, 7, 0), new State(2, 8, 0), [
+        [0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+        [0, 0, 1, 1, 1, 0, 0, 0, 1, 1],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+        [0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ]),
     new Level(new State(0, 3, 0), new State(9, 6, 0), [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -277,12 +374,13 @@ const levels = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 0]
     ])
-
 ];
 const game = new Game(levels);
+const showBtn = document.getElementById("setting-button");
+const closeBtn = document.querySelector(".close");
 game.updateMap(0);
 document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").style.display = "none";
+    document.getElementById("start-screen").remove();
     game.show();
 });
 const showBtn = document.getElementById("setting-button");
