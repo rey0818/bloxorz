@@ -161,7 +161,7 @@ class Board {
         for (const [x, y] of occupied) {
             if (this.tiles[x][y] === 0) {
                 this.diedSound.play();
-                alert("You died, you fucking idiot");
+                document.getElementById("gameover").style.display = "grid" ;
                 this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
                 this.setPlayerPos(this.player, 0, 0, false);
                 break;
@@ -288,6 +288,7 @@ document.getElementById('start-button').addEventListener('click', function () {
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
 const homebtn = document.getElementById("homebtn");
+const homebtn2 = document.getElementById("homebtn2");
 showBtn.addEventListener("click", function () {
     game.dialogElement.showModal();
 });
@@ -298,6 +299,11 @@ homebtn.addEventListener("click", function () {
     // ctx.clearRect(0, 0, canvas.width, canvas.height);
     game.hide();
     game.dialogElement.close();
-    const startScreen = document.getElementById("start-screen");
-    startScreen.style.display = "grid";
+    document.getElementById("start-screen").style.display = "grid";
+});
+homebtn2.addEventListener("click",function(){
+    game.hide();
+    game.dialogElement.close();
+    document.getElementById("gameover").style.display = "none" ;
+    document.getElementById("start-screen").style.display = "grid";
 });
