@@ -2,12 +2,17 @@
 import * as THREE from 'three';
 const omega = 5; //degrees per frame
 const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const dirNames = ["Up", "Down", "Left", "Right"];
 const deltaPos = [
     [[-2, 0, 1], [1, 0, 1], [0, -2, 2], [0, 1, 2]],
     [[-1, 0, 0], [2, 0, 0], [0, -1, 1], [0, 1, 1]],
     [[-1, 0, 2], [1, 0, 2], [0, -1, 0], [0, 2, 0]]
 ];
+const sess = new onnx.InferenceSession();
 class State {
+    x;
+    y;
+    dir; // 0: stand, 1:down, 2:right
     constructor(x, y, dir) {
         this.x = x;
         this.y = y;
@@ -32,8 +37,54 @@ class State {
         return new State(this.x, this.y, this.dir);
     }
 }
+class Level {
+    s;
+    e;
+    w;
+    h;
+    map;
+    constructor(s, e, map) {
+        this.map = map;
+        this.s = s;
+        this.e = e;
+        this.w = map.length;
+        this.h = map[0].length;
+    }
+    async predict(s) {
+        const arr = new Float32Array(this.w * this.h * 3).fill(0);
+        for (let x = 0; x < this.w; x++)
+            for (let y = 0; y < this.h; y++)
+                arr[x * this.w + y] = this.map[x][y];
+        for (const [x, y] of s.occupied())
+            arr[(x - padding) * this.w + (y - padding) + this.w * this.h] = 1;
+        for (const [x, y] of this.e.occupied())
+            arr[x * this.w + y + this.w * this.h * 2] = 1;
+        const inputTensor = new onnx.Tensor(arr, 'float32', [1, 3, this.w, this.h]);
+        const outputMap = await sess.run([inputTensor]);
+        const output = outputMap.values().next().value.data;
+        return output;
+    }
+}
 const padding = 2;
 class Board {
+    canvas;
+    renderer;
+    camera;
+    light;
+    scene;
+    tileMeshes;
+    playerMesh;
+    diedSound;
+    onCooldown;
+    offsetX;
+    offsetY;
+    width;
+    height;
+    tilesize;
+    tiles;
+    player;
+    startState;
+    endState;
     constructor(w, h, t, canvas) {
         w = w + 2 * padding;
         h = h + 2 * padding;
@@ -214,6 +265,17 @@ class Board {
             this.fall([vel[0], vel[1] - 0.03, vel[2]], dir);
         });
     }
+    async predictMove() {
+        const lvl = new Level(this.startState, this.endState, this.tiles);
+        const output = await lvl.predict(this.player);
+        let max = 0, maxi = 0;
+        for (let i = 0; i < 4; i++)
+            if (output[i] > max) {
+                max = output[i];
+                maxi = i;
+            }
+        this.move("Arrow" + dirNames[maxi]);
+    }
     update() {
         if (this.player.isEqual(this.endState)) {
             alert("You won! Good Job.");
@@ -228,15 +290,7 @@ class Board {
         this.setPlayerPos(this.player, 0, 0, false);
     }
     move(key) {
-        let dir = -1;
-        if (key === "ArrowUp")
-            dir = 0;
-        if (key === "ArrowDown")
-            dir = 1;
-        if (key === "ArrowLeft")
-            dir = 2;
-        if (key === "ArrowRight")
-            dir = 3;
+        let dir = dirNames.indexOf(key.substring(5));
         if (dir === -1)
             return;
         if (this.onCooldown)
@@ -258,18 +312,13 @@ class Board {
         return deg * Math.PI / 180;
     }
 }
-class Level {
-    constructor(s, e, map) {
-        this.map = map;
-        this.s = s;
-        this.e = e;
-    }
-}
 class Game {
+    board;
+    canvas;
+    shown;
+    levels;
+    dialogElement;
     constructor(lvls) {
-        this.keydown = (e) => {
-            this.board.move(e.key);
-        };
         this.canvas = document.createElement('canvas');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
@@ -288,6 +337,9 @@ class Game {
             document.querySelector('.lvl-container').appendChild(btn);
         }
     }
+    keydown = (e) => {
+        this.board.move(e.key);
+    };
     updateMap(index) {
         this.board = new Board(10, 10, 0.7, this.canvas);
         this.board.initMap(this.levels[index].s, this.levels[index].e, this.levels[index].map);
@@ -359,12 +411,17 @@ const levels = [
     ])
 ];
 const game = new Game(levels);
+const startBtn = document.getElementById("start-button");
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
 game.updateMap(0);
-document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").remove();
-    game.show();
+const loadingModelPromise = sess.loadModel("./train/model.onnx");
+loadingModelPromise.then(() => {
+    console.log("model loaded");
+    startBtn.addEventListener('click', function () {
+        document.getElementById("start-screen").remove();
+        game.show();
+    });
 });
 showBtn.addEventListener("click", function () {
     game.dialogElement.showModal();

@@ -3,11 +3,15 @@ import * as THREE from 'three';
 
 const omega = 5; //degrees per frame
 const dirs = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+const dirNames = ["Up", "Down", "Left", "Right"];
 const deltaPos = [ // 0: up, 1: down, 2: left, 3: right
     [[-2, 0, 1], [1, 0, 1], [0, -2, 2], [0, 1, 2]],
     [[-1, 0, 0], [2, 0, 0], [0, -1, 1], [0, 1, 1]],
     [[-1, 0, 2], [1, 0, 2], [0, -1, 0], [0, 2, 0]]
 ];
+
+declare const onnx: any;
+const sess = new onnx.InferenceSession();
 
 class State {
     x: number;
@@ -37,6 +41,33 @@ class State {
 
     copy(): State {
         return new State(this.x, this.y, this.dir);
+    }
+}
+
+class Level {
+    s: State;
+    e: State;
+    w: number;
+    h: number;
+    map: number[][];
+    constructor(s: State, e: State, map: number[][]) {
+        this.map = map;
+        this.s = s;
+        this.e = e;
+        this.w = map.length;
+        this.h = map[0].length;
+    }
+
+    async predict(s: State) {
+        const arr = new Float32Array(this.w * this.h * 3).fill(0);
+        for (let x = 0; x < this.w; x++) for (let y = 0; y < this.h; y++)
+            arr[x * this.w + y] = this.map[x][y];
+        for (const [x, y] of s.occupied()) arr[(x - padding) * this.w + (y - padding) + this.w * this.h] = 1;
+        for (const [x, y] of this.e.occupied()) arr[x * this.w + y + this.w * this.h * 2] = 1;
+        const inputTensor = new onnx.Tensor(arr, 'float32', [1, 3, this.w, this.h]);
+        const outputMap = await sess.run([inputTensor]);
+        const output = outputMap.values().next().value.data;
+        return output;
     }
 }
 
@@ -202,13 +233,13 @@ class Board {
         let pos = [this.player.y * this.tilesize - this.offsetY, 0, this.player.x * this.tilesize - this.offsetX];
         if (this.player.dir === 1) pos[2] += this.tilesize / 2;
         if (this.player.dir === 2) pos[0] += this.tilesize / 2;
-        pos[2-Math.floor(dir/2)*2] += rx * this.tilesize * (dir % 2 === 0 ? -1 : 1);
+        pos[2 - Math.floor(dir / 2) * 2] += rx * this.tilesize * (dir % 2 === 0 ? -1 : 1);
         pos[1] += ry * this.tilesize;
         this.playerMesh.position.set(pos[0], pos[1], pos[2]);
-        if(dir === 0) this.playerMesh.rotation.set(Math.PI / 2-theta, 0, 0);
-        if(dir === 1) this.playerMesh.rotation.set(Math.PI / 2+theta, 0, 0);
-        if(dir === 2) this.playerMesh.rotation.set(0, 0, Math.PI / 2+theta);
-        if(dir === 3) this.playerMesh.rotation.set(0, 0, Math.PI / 2-theta);
+        if (dir === 0) this.playerMesh.rotation.set(Math.PI / 2 - theta, 0, 0);
+        if (dir === 1) this.playerMesh.rotation.set(Math.PI / 2 + theta, 0, 0);
+        if (dir === 2) this.playerMesh.rotation.set(0, 0, Math.PI / 2 + theta);
+        if (dir === 3) this.playerMesh.rotation.set(0, 0, Math.PI / 2 - theta);
         this.render();
         requestAnimationFrame(() => {
             this.trip(dir, deg + omega);
@@ -232,6 +263,21 @@ class Board {
         });
     }
 
+    async predictMove(){
+        const lvl = new Level(this.startState, this.endState, this.tiles);
+        const output = await lvl.predict(this.player);
+        let max = 0, maxi = 0, details = "";
+        for (let i = 0; i < 4; i++) {
+            if (output[i] > max) {
+                max = output[i];
+                maxi = i;
+            }
+            details += `${Math.max(output[i]*100, 0).toFixed(3)}% confident going ${dirNames[i]}\n`;
+        }
+        this.move("Arrow" + dirNames[maxi]);
+        console.log(details);
+    }
+
     update() {
         if (this.player.isEqual(this.endState)) {
             alert("You won! Good Job.");
@@ -248,11 +294,7 @@ class Board {
     }
 
     move(key: string) {
-        let dir = -1;
-        if (key === "ArrowUp") dir = 0;
-        if (key === "ArrowDown") dir = 1;
-        if (key === "ArrowLeft") dir = 2;
-        if (key === "ArrowRight") dir = 3;
+        let dir = dirNames.indexOf(key.substring(5));
         if (dir === -1) return;
         if (this.onCooldown) return;
         this.onCooldown = true;
@@ -272,17 +314,6 @@ class Board {
 
     static rad(deg: number): number {
         return deg * Math.PI / 180;
-    }
-}
-
-class Level {
-    s: State;
-    e: State;
-    map: number[][];
-    constructor(s: State, e: State, map: number[][]) {
-        this.map = map;
-        this.s = s;
-        this.e = e;
     }
 }
 
@@ -390,13 +421,19 @@ const levels = [
 ];
 
 const game = new Game(levels);
+const startBtn = <HTMLButtonElement>document.getElementById("start-button");
 const showBtn = <HTMLButtonElement>document.getElementById("setting-button");
 const closeBtn = <HTMLButtonElement>document.querySelector(".close");
 game.updateMap(0);
 
-document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").remove();
-    game.show();
+const loadingModelPromise = sess.loadModel("./train/model.onnx");
+
+loadingModelPromise.then(() => {
+    console.log("model loaded");
+    startBtn.addEventListener('click', function () {
+        document.getElementById("start-screen").remove();
+        game.show();
+    });
 });
 
 showBtn.addEventListener("click", function () {
