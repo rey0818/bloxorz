@@ -223,7 +223,7 @@ class Board {
     }
     restart() {
         this.diedSound.play();
-        alert("You died, you fucking idiot");
+        document.getElementById("gameover").style.display = "grid" ;
         this.player = this.startState.copy();
         this.setPlayerPos(this.player, 0, 0, false);
     }
@@ -297,6 +297,7 @@ class Game {
         this.dialogElement = document.getElementById("dialog");
         for (let i = 0; i < this.levels.length; i++) {
             const btn = document.createElement('button');
+            btn.className = 'levelbtn' ;
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
                 this.updateMap(i);
@@ -376,11 +377,9 @@ const levels = [
     ])
 ];
 const game = new Game(levels);
-const showBtn = document.getElementById("setting-button");
-const closeBtn = document.querySelector(".close");
 game.updateMap(0);
 document.getElementById('start-button').addEventListener('click', function () {
-    document.getElementById("start-screen").remove();
+    document.getElementById("start-screen").style.display = "none";
     game.show();
 });
 const showBtn = document.getElementById("setting-button");
