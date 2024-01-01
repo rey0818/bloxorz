@@ -348,6 +348,8 @@ class Game {
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
                 this.curLevel = i;
+                startscreen.style.display = "none";
+                this.show();
                 this.updateMap(i);
                 this.dialogElement.close();
             });
@@ -445,6 +447,7 @@ const levels = [
     ])
 ];
 const game = new Game(levels);
+const startscreen = document.getElementById("start-screen");
 const startBtn = document.getElementById("start-button");
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
@@ -460,7 +463,7 @@ const loadingModelPromise = sess.loadModel("./train/model.onnx");
 loadingModelPromise.then(() => {
     console.log("model loaded");
     startBtn.addEventListener('click', function () {
-        document.getElementById("start-screen").style.display = "none";
+        startscreen.style.display = "none";
         game.show();
     });
 });
@@ -473,13 +476,13 @@ closeBtn.addEventListener("click", function () {
 homebtn.addEventListener("click", function () {
     game.hide();
     game.dialogElement.close();
-    document.getElementById("start-screen").style.display = "grid";
+    startscreen.style.display = "grid";
 });
 homebtn2.addEventListener("click", function () {
     game.hide();
     game.dialogElement.close();
     document.getElementById("gameover").style.display = "none";
-    document.getElementById("start-screen").style.display = "grid";
+    startscreen.style.display = "grid";
 });
 document.addEventListener("keydown", function (e) {
     if ((e.key === 'Enter' || e.key === ' ') && document.getElementById("gameover").style.display === "grid") {
