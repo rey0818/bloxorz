@@ -92,6 +92,7 @@ class Board {
     player: State;
     startState: State;
     endState: State;
+    level: Level;
     constructor(w: number, h: number, t: number, canvas: HTMLCanvasElement) {
         w = w + 2 * padding;
         h = h + 2 * padding;
@@ -125,6 +126,7 @@ class Board {
             for (let y = padding; y < this.height - padding; y++)
                 this.tiles[x][y] = t[x - padding][y - padding];
         this.tiles[this.endState.x][this.endState.y] = -1;
+        this.level = new Level(s.copy(), e.copy(), t);
 
         this.tileMeshes = [];
         const tilegeometry = new THREE.BoxGeometry(this.tilesize * 0.9, this.tilesize * 0.4, this.tilesize * 0.9);
@@ -266,15 +268,14 @@ class Board {
     }
 
     async predictMove(){
-        const lvl = new Level(this.startState, this.endState, this.tiles);
-        const output = await lvl.predict(this.player);
+        const output = await this.level.predict(this.player);
         let max = 0, maxi = 0, details = "";
         for (let i = 0; i < 4; i++) {
             if (output[i] > max) {
                 max = output[i];
                 maxi = i;
             }
-            details += `${Math.max(output[i]*100, 0).toFixed(3)}% confident going ${dirNames[i]}\n`;
+            details += `${(output[i]*100).toFixed(3)}% confident going ${dirNames[i]}\n`;
         }
         this.move("Arrow" + dirNames[maxi]);
         console.log(details);
@@ -478,6 +479,9 @@ document.addEventListener("keydown",function(e){
     if((e.key==='Enter' || e.key===' ') && document.getElementById("gameover").style.display === "grid"){
         document.getElementById("gameover").style.display = "none";
         game.show();
+    }
+    else if(e.key==';'){
+        game.board.predictMove();
     }
 });
 
