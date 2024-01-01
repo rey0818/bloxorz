@@ -270,6 +270,8 @@ class Board {
         });
     }
     async predictMove() {
+        if (this.onCooldown)
+            return;
         const output = await this.level.predict(this.player);
         let max = 0, maxi = 0, details = "";
         for (let i = 0; i < 4; i++) {
