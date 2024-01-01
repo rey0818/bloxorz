@@ -347,6 +347,7 @@ class Game {
             btn.className = 'levelbtn';
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
+                this.curLevel = i;
                 this.updateMap(i);
                 this.dialogElement.close();
             });
