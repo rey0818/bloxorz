@@ -347,7 +347,7 @@ class Game {
             btn.className = 'levelbtn';
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
-                if(startscreen.style.display === "grid" ) startscreen.style.display = "none" ;
+                startscreen.style.display = "none" ;
                 this.show();
                 this.updateMap(i);
                 this.dialogElement.close();
