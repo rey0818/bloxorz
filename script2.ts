@@ -267,8 +267,8 @@ class Board {
         });
     }
 
-    async predictMove(){
-        if(this.onCooldown) return;
+    async predictMove() {
+        if (this.onCooldown) return;
         const output = await this.level.predict(this.player);
         let max = 0, maxi = 0, details = "";
         for (let i = 0; i < 4; i++) {
@@ -276,7 +276,7 @@ class Board {
                 max = output[i];
                 maxi = i;
             }
-            details += `${(output[i]*100).toFixed(3)}% confident going ${dirNames[i]}\n`;
+            details += `${(output[i] * 100).toFixed(3)}% confident going ${dirNames[i]}\n`;
         }
         this.move("Arrow" + dirNames[maxi]);
         console.log(details);
@@ -287,7 +287,7 @@ class Board {
             this.onCooldown = true;
             this.winsound.play();
             alert("You won! Good Job.");
-            setTimeout(()=>{game.nextLevel();}, 0);
+            setTimeout(() => { game.nextLevel(); }, 0);
         }
     }
 
@@ -317,9 +317,9 @@ class Board {
         return true;
     }
 
-    volumechange(e: number){
+    volumechange(e: number) {
         this.winsound.volume = e;
-        this.diedSound.volume = e; 
+        this.diedSound.volume = e;
     }
 
     static rad(deg: number): number {
@@ -350,6 +350,9 @@ class Game {
             btn.className = 'levelbtn';
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
+                this.curLevel = i;
+                startscreen.style.display = "none";
+                this.show();
                 this.updateMap(i);
                 this.dialogElement.close();
             });
@@ -452,6 +455,7 @@ const levels = [
 ];
 
 const game = new Game(levels);
+const startscreen = document.getElementById("start-screen");
 const startBtn = document.getElementById("start-button");
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
@@ -469,7 +473,7 @@ const loadingModelPromise = sess.loadModel("./train/model.onnx");
 loadingModelPromise.then(() => {
     console.log("model loaded");
     startBtn.addEventListener('click', function () {
-        document.getElementById("start-screen").style.display = "none";
+        startscreen.style.display = "none";
         game.show();
     });
 });
@@ -485,41 +489,41 @@ closeBtn.addEventListener("click", function () {
 homebtn.addEventListener("click", function () {
     game.hide();
     game.dialogElement.close();
-    document.getElementById("start-screen").style.display = "grid";
+    startscreen.style.display = "grid";
 });
 
-homebtn2.addEventListener("click",function(){
+homebtn2.addEventListener("click", function () {
     game.hide();
     game.dialogElement.close();
     document.getElementById("gameover").style.display = "none";
-    document.getElementById("start-screen").style.display = "grid";
+    startscreen.style.display = "grid";
 });
 
-document.addEventListener("keydown",function(e){
-    if((e.key==='Enter' || e.key===' ') && document.getElementById("gameover").style.display === "grid"){
+document.addEventListener("keydown", function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && document.getElementById("gameover").style.display === "grid") {
         document.getElementById("gameover").style.display = "none";
         game.show();
     }
-    else if(e.key==';'){
+    else if (e.key == ';') {
         game.board.predictMove();
     }
 });
 
-tryagain.addEventListener("click",function(){
+tryagain.addEventListener("click", function () {
     document.getElementById("gameover").style.display = "none";
     game.show();
 });
 
-slider.addEventListener('change',function(e){
+slider.addEventListener('change', function (e) {
     const target = e.target as HTMLInputElement;
-    game.board.volumechange(parseInt(target.value)/100);
+    game.board.volumechange(parseInt(target.value) / 100);
     volume.innerHTML = target.value;
 });
 
-audiobtnopen.addEventListener("click",function(){
+audiobtnopen.addEventListener("click", function () {
     document.getElementById("Audio").style.display = "grid";
 });
 
-audiobtnclose.addEventListener("click",function(){
+audiobtnclose.addEventListener("click", function () {
     document.getElementById("Audio").style.display = "none";
 });
