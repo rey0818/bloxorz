@@ -54,6 +54,7 @@ class Board {
         const ambient = new THREE.AmbientLight(0xffffff, 0.3);
         this.scene.add(ambient);
         this.diedSound = new Audio('music1.mp3');
+        this.winsound = new Audio('music2.mp3');
     }
     initMap(s, e, t) {
         this.player = new State(s.x + padding, s.y + padding, s.dir);
@@ -216,6 +217,7 @@ class Board {
     }
     update() {
         if (this.player.isEqual(this.endState)) {
+            this.winsound.play();
             alert("You won! Good Job.");
             this.player = this.startState.copy();
             this.setPlayerPos(this.player, 0, 0, false);
@@ -256,6 +258,7 @@ class Board {
             }
         }
         if (this.player.isEqual(this.endState)) {
+            this.winsound.play();
             alert("You won! Good Job.");
             this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
             this.setPlayerPos(this.player, 0, 0, false);
@@ -275,6 +278,7 @@ class Board {
         return deg * Math.PI / 180;
     }
     volumechange(e){
+        this.winsound.volume = e ;
         this.diedSound.volume = e ; 
     }
 }
@@ -412,6 +416,12 @@ homebtn2.addEventListener("click",function(){
     document.getElementById("gameover").style.display = "none" ;
     document.getElementById("start-screen").style.display = "grid";
 });
+document.addEventListener("keydown",function(e){
+    if((e.key==='Enter' || e.key===' ') && document.getElementById("gameover").style.display === "grid"){
+        document.getElementById("gameover").style.display = "none" ;
+        game.show();
+    }
+})
 tryagain.addEventListener("click",function(){
     document.getElementById("gameover").style.display = "none" ;
     game.show();
