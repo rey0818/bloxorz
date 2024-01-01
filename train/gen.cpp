@@ -35,7 +35,7 @@ int num_components(){
 int main(){
     srand(time(0));
     freopen("gen4.txt", "w", stdout);
-    for(int z=0;z<500;z++){
+    for(int z=0;z<2000;z++){
         memset(a, 0, sizeof(a));
         for(int i=0;i<((w+h)/3);i++){
             int x1, y1, x2, y2;

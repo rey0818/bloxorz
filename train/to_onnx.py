@@ -7,12 +7,12 @@ H=10
 class Model(nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
-        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
-        self.fc1 = nn.Linear(32*W*H, 128)
-        self.fc2 = nn.Linear(128, 64)
+        self.conv1 = nn.Conv2d(3, 16, 9, padding=4)
+        self.conv2 = nn.Conv2d(16, 32, 9, padding=4)
+        self.fc1 = nn.Linear(32*W*H, 512)
+        self.fc2 = nn.Linear(512, 64)
         self.fc3 = nn.Linear(64, 4)
-    
+
     def forward(self, x):
         x = self.conv1(x)
         x = nn.functional.relu(x)
