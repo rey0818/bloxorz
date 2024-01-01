@@ -274,6 +274,9 @@ class Board {
     static rad(deg) {
         return deg * Math.PI / 180;
     }
+    volumechange(e){
+        this.diedSound.volume = e ; 
+    }
 }
 class Level {
     constructor(s, e, map) {
@@ -386,6 +389,12 @@ const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
 const homebtn = document.getElementById("homebtn");
 const homebtn2 = document.getElementById("homebtn2");
+const tryagain = document.getElementById("gameoverbtn");
+const slider = document.getElementById("slider");
+const volume = document.getElementById("volume");
+const audiobtnopen = document.getElementById("audiobtnopen");
+const audiobtnclose = document.getElementById("audiobtnclose");
+volume.innerHTML = 50 ;
 showBtn.addEventListener("click", function () {
     game.dialogElement.showModal();
 });
@@ -393,7 +402,6 @@ closeBtn.addEventListener("click", function () {
     game.dialogElement.close();
 });
 homebtn.addEventListener("click", function () {
-    // ctx.clearRect(0, 0, canvas.width, canvas.height);
     game.hide();
     game.dialogElement.close();
     document.getElementById("start-screen").style.display = "grid";
@@ -403,4 +411,19 @@ homebtn2.addEventListener("click",function(){
     game.dialogElement.close();
     document.getElementById("gameover").style.display = "none" ;
     document.getElementById("start-screen").style.display = "grid";
+});
+tryagain.addEventListener("click",function(){
+    document.getElementById("gameover").style.display = "none" ;
+    game.show();
+});
+slider.addEventListener('change',function(e){
+    game.board.volumechange(e.target.value/100);
+    volume.innerHTML = e.target.value;
+});
+audiobtnopen.addEventListener("click",function(){
+    document.getElementById("Audio").style.display = "grid" ;
+});
+audiobtnclose.addEventListener("click",function(){
+    console.log("fafwawf");
+    document.getElementById("Audio").style.display = "none" ;
 });

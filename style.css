@@ -28,7 +28,7 @@ html, body {
     color:white;
     border: 2px solid white;
 }
-#audio-button{
+#audiobtnopen{
     font-weight: 1000;
     color:white;
     border: 2px solid white;
@@ -52,7 +52,7 @@ html, body {
     align-items: center; 
     justify-content: center;  
 }
-#dialog{
+#dialog,#Audio{
     border-radius: 5%;
     background-image: linear-gradient(-225deg, #2CD8D5 0%, #C5C1FF 56%, #FFBAC3 100%);
     /* background-color: aquamarine; */
@@ -62,6 +62,9 @@ html, body {
     left: 50%;
     top:50%;
     transform: translate(-50%, -50%);
+}
+#Audio{
+    display: none;
 }
 .close{
     transform: scale(1.5);
@@ -77,9 +80,6 @@ html, body {
     border: 2px solid black;
     box-shadow: 5px 5px gray 
  }
- #levelbtn:hover {
-    background-color: #f0f0f0;
-}
  #gameover{
     background-image: linear-gradient(-225deg, #2CD8D5 0%, #C5C1FF 56%, #FFBAC3 100%);
     /* background-color: aquamarine; */
@@ -93,7 +93,7 @@ html, body {
     font-size: x-large;
     font-family: Arial, Helvetica, sans-serif;
 }
-#game {
+#game{
     position:fixed;
     top: 50%;
     left: 50%;
@@ -106,7 +106,7 @@ html, body {
 #homebtn2{
     position:relative;
 }
-#gameovertext2{
+#gameoverbtn{
     font-weight: 1000;
     font-size: large;
     font-family: Arial, Helvetica, sans-serif;
@@ -114,4 +114,21 @@ html, body {
 }
 #tryagain{
     margin-top: 3%;
+ }
+#audiobtnclose{
+    height: fit-content;
+    transform: scale(1.5);
+    background-image: linear-gradient(-225deg, #C5C1FF 56%, #FFBAC3 100%);
+    border: 0px;
+    margin-left: 90%;
+}
+#audiotext{
+    font-weight: 1000;
+    font-size: large;
+    font-family: Arial, Helvetica, sans-serif;
+    margin-left: 5%;
+}
+#slider{
+    margin-left: 4%;
+    width: 80%;
 }

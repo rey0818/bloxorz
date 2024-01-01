@@ -21,9 +21,14 @@
     <div class="row justify-content-center">
       <h1 class="h1font col-sm-5 col-md-5 ">Bloxorz</h1>
       <button id="start-button" type="button" class="btn btn-outline-warning">Tap To Start</button>
-      <button id="audio-button" type="button"class="btn btn-outline-warning">Audio</button>
+      <button id="audiobtnopen" type="button"class="btn btn-outline-warning">Audio</button>
       </div>
     </div>
+  </section>
+  <section id="Audio" >
+    <button id="audiobtnclose"><i class="bi bi-x-square"></i></button>
+    <div><p id="audiotext">Volume: <span id = "volume"></span></p></div>
+      <input type="range" min="0" max="100" value="50" class="slider" id="slider">
   </section>
   <div id="setting">
     <button id="setting-button" class="btn btn-outline-secondary">
@@ -39,7 +44,7 @@
     <section id="gameover">
       <div id="game">
         <div><a id = "gameovertext">You died, you fucking idiot...</a></div>
-        <div id="tryagain"><button id = "gameovertext2">Try Again!</button></div>
+        <div id="tryagain"><button id = "gameoverbtn">Try Again!</button></div>
         <div id="tryagain"><button id="homebtn2"><i class="bi bi-house-door-fill"></i></button></div>
       </div>
     </section>
