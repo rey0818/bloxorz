@@ -424,6 +424,5 @@ audiobtnopen.addEventListener("click",function(){
     document.getElementById("Audio").style.display = "grid" ;
 });
 audiobtnclose.addEventListener("click",function(){
-    console.log("fafwawf");
     document.getElementById("Audio").style.display = "none" ;
 });
