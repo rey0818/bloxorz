@@ -283,13 +283,10 @@ class Board {
 
     update() {
         if (this.player.isEqual(this.endState)) {
+            this.onCooldown = true;
             this.winsound.play();
             alert("You won! Good Job.");
-            this.player = this.startState.copy();
-            this.setPlayerPos(this.player, 0, 0, false);
-            setTimeout(() => {
-                game.nextLevel();
-            }, 100);
+            setTimeout(()=>{game.nextLevel();}, 0);
         }
     }
 
