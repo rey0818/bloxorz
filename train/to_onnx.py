@@ -28,7 +28,7 @@ class Model(nn.Module):
     
 
 model = Model()
-model.load_state_dict(torch.load('./modelgpu.pt', map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('./modelgpu3.pt', map_location=torch.device('cpu')))
 model.eval()
 dummy_input = torch.zeros(1, 3, W, H)
 output = model(dummy_input)
