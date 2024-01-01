@@ -105,6 +105,7 @@ class Board {
         const ambient = new THREE.AmbientLight(0xffffff, 0.3);
         this.scene.add(ambient);
         this.diedSound = new Audio('music1.mp3');
+        this.winsound = new Audio('music2.mp3');
     }
     initMap(s, e, t) {
         this.player = new State(s.x + padding, s.y + padding, s.dir);
@@ -278,6 +279,7 @@ class Board {
     }
     update() {
         if (this.player.isEqual(this.endState)) {
+            this.winsound.play();
             alert("You won! Good Job.");
             this.player = this.startState.copy();
             this.setPlayerPos(this.player, 0, 0, false);
@@ -285,7 +287,7 @@ class Board {
     }
     restart() {
         this.diedSound.play();
-        alert("You died, you fucking idiot");
+        document.getElementById("gameover").style.display = "grid" ;
         this.player = this.startState.copy();
         this.setPlayerPos(this.player, 0, 0, false);
     }
@@ -297,6 +299,24 @@ class Board {
             return;
         this.onCooldown = true;
         this.setPlayerPos(this.player.copy(), dir, 0);
+    }
+    update() {
+        const occupied = this.player.occupied();
+        for (const [x, y] of occupied) {
+            if (this.tiles[x][y] === 0) {
+                this.diedSound.play();
+                document.getElementById("gameover").style.display = "grid" ;
+                this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
+                this.setPlayerPos(this.player, 0, 0, false);
+                break;
+            }
+        }
+        if (this.player.isEqual(this.endState)) {
+            this.winsound.play();
+            alert("You won! Good Job.");
+            this.player = new State(this.startState.x, this.startState.y, this.startState.dir);
+            this.setPlayerPos(this.player, 0, 0, false);
+        }
     }
     render() {
         this.renderer.render(this.scene, this.camera);
@@ -310,6 +330,10 @@ class Board {
     }
     static rad(deg) {
         return deg * Math.PI / 180;
+    }
+    volumechange(e){
+        this.winsound.volume = e ;
+        this.diedSound.volume = e ; 
     }
 }
 class Game {
@@ -329,6 +353,7 @@ class Game {
         this.dialogElement = document.getElementById("dialog");
         for (let i = 0; i < this.levels.length; i++) {
             const btn = document.createElement('button');
+            btn.className = 'levelbtn' ;
             btn.innerText = `Level ${i + 1}`;
             btn.addEventListener('click', () => {
                 this.updateMap(i);
@@ -411,21 +436,63 @@ const levels = [
     ])
 ];
 const game = new Game(levels);
+
 const startBtn = document.getElementById("start-button");
 const showBtn = document.getElementById("setting-button");
 const closeBtn = document.querySelector(".close");
+const homebtn = document.getElementById("homebtn");
+const homebtn2 = document.getElementById("homebtn2");
+const tryagain = document.getElementById("gameoverbtn");
+const slider = document.getElementById("slider");
+const volume = document.getElementById("volume");
+const audiobtnopen = document.getElementById("audiobtnopen");
+const audiobtnclose = document.getElementById("audiobtnclose");
+volume.innerHTML = 50 ;
+
 game.updateMap(0);
 const loadingModelPromise = sess.loadModel("./train/model.onnx");
 loadingModelPromise.then(() => {
     console.log("model loaded");
     startBtn.addEventListener('click', function () {
-        document.getElementById("start-screen").remove();
+        document.getElementById("start-screen").style.display = "none";
         game.show();
     });
 });
+
 showBtn.addEventListener("click", function () {
     game.dialogElement.showModal();
 });
 closeBtn.addEventListener("click", function () {
     game.dialogElement.close();
+});
+homebtn.addEventListener("click", function () {
+    game.hide();
+    game.dialogElement.close();
+    document.getElementById("start-screen").style.display = "grid";
+});
+homebtn2.addEventListener("click",function(){
+    game.hide();
+    game.dialogElement.close();
+    document.getElementById("gameover").style.display = "none" ;
+    document.getElementById("start-screen").style.display = "grid";
+});
+document.addEventListener("keydown",function(e){
+    if((e.key==='Enter' || e.key===' ') && document.getElementById("gameover").style.display === "grid"){
+        document.getElementById("gameover").style.display = "none" ;
+        game.show();
+    }
+})
+tryagain.addEventListener("click",function(){
+    document.getElementById("gameover").style.display = "none" ;
+    game.show();
+});
+slider.addEventListener('change',function(e){
+    game.board.volumechange(e.target.value/100);
+    volume.innerHTML = e.target.value;
+});
+audiobtnopen.addEventListener("click",function(){
+    document.getElementById("Audio").style.display = "grid" ;
+});
+audiobtnclose.addEventListener("click",function(){
+    document.getElementById("Audio").style.display = "none" ;
 });
