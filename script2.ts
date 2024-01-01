@@ -287,6 +287,9 @@ class Board {
             alert("You won! Good Job.");
             this.player = this.startState.copy();
             this.setPlayerPos(this.player, 0, 0, false);
+            setTimeout(() => {
+                game.nextLevel();
+            }, 100);
         }
     }
 
@@ -331,9 +334,10 @@ class Game {
     canvas: HTMLCanvasElement;
     shown: boolean;
     levels: Level[];
+    curLevel: number;
     dialogElement: HTMLDialogElement;
 
-    constructor(lvls: Level[]) {
+    constructor(lvls: Level[], curLevel: number = 0) {
         this.canvas = document.createElement('canvas');
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
@@ -341,6 +345,7 @@ class Game {
         this.canvas.hidden = true;
         this.shown = false;
         this.levels = lvls;
+        this.curLevel = curLevel;
         this.dialogElement = <HTMLDialogElement>document.getElementById("dialog");
         for (let i = 0; i < this.levels.length; i++) {
             const btn = document.createElement('button');
@@ -352,6 +357,7 @@ class Game {
             });
             document.querySelector('.lvl-container').appendChild(btn);
         }
+        this.updateMap(curLevel);
     }
 
     keydown = (e: KeyboardEvent) => {
@@ -362,6 +368,11 @@ class Game {
         this.board = new Board(10, 10, 0.7, this.canvas);
         this.board.initMap(this.levels[index].s, this.levels[index].e, this.levels[index].map);
         this.board.render();
+    }
+
+    nextLevel() {
+        this.curLevel = (this.curLevel + 1) % this.levels.length;
+        this.updateMap(this.curLevel);
     }
 
     show() {
@@ -427,6 +438,18 @@ const levels = [
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 0]
+    ]),
+    new Level(new State(0, 1, 0), new State(6, 5, 0), [
+        [0, 1, 0, 0, 0, 0, 0, 0, 1, 0],
+        [1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
+        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
+        [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+        [0, 0, 0, 0, 1, 1, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 0, 0, 0, 0, 0, 0, 1, 1]
     ])
 ];
 
@@ -442,7 +465,6 @@ const volume = document.getElementById("volume");
 const audiobtnopen = document.getElementById("audiobtnopen");
 const audiobtnclose = document.getElementById("audiobtnclose");
 volume.innerHTML = "50";
-game.updateMap(0);
 
 const loadingModelPromise = sess.loadModel("./train/model.onnx");
 
