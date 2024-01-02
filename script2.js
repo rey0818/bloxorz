@@ -122,7 +122,7 @@ class Level {
         const arr = new Float32Array(w * h * 3).fill(0);
         for (let x = 0; x < w; x++)
             for (let y = 0; y < h; y++)
-                arr[x * w + y] = this.map[x + padding][y + padding];
+                arr[x * w + y] = this.isBlock(x + padding, y + padding) ? 1 : 0;
         for (const [x, y] of s.occupied())
             arr[(x - padding) * w + (y - padding) + w * h] = 1;
         for (const [x, y] of this.e.occupied())
