@@ -87,12 +87,13 @@ class Level {
     }
 
     async predict(s: State) {
-        const arr = new Float32Array(this.w * this.h * 3).fill(0);
-        for (let x = 0; x < this.w; x++) for (let y = 0; y < this.h; y++)
-            arr[x * this.w + y] = this.map[x][y];
-        for (const [x, y] of s.occupied()) arr[(x - padding) * this.w + (y - padding) + this.w * this.h] = 1;
-        for (const [x, y] of this.e.occupied()) arr[x * this.w + y + this.w * this.h * 2] = 1;
-        const inputTensor = new onnx.Tensor(arr, 'float32', [1, 3, this.w, this.h]);
+        const [w, h] = [this.w - 2 * padding, this.h - 2 * padding];
+        const arr = new Float32Array(w * h * 3).fill(0);
+        for (let x = 0; x < w; x++) for (let y = 0; y < h; y++)
+            arr[x * w + y] = this.map[x + padding][y + padding];
+        for (const [x, y] of s.occupied()) arr[(x - padding) * w + (y - padding) + w * h] = 1;
+        for (const [x, y] of this.e.occupied()) arr[(x - padding) * w + (y - padding) + w * h * 2] = 1;
+        const inputTensor = new onnx.Tensor(arr, 'float32', [1, 3, w, h]);
         const outputMap = await sess.run([inputTensor]);
         const output = outputMap.values().next().value.data;
         return output;
