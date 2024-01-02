@@ -368,6 +368,7 @@ class Game {
     nextLevel() {
         this.curLevel = (this.curLevel + 1) % this.levels.length;
         this.updateMap(this.curLevel);
+        showlevel.innerHTML = this.curLevel+1;
     }
     show() {
         if (this.shown)
@@ -458,12 +459,16 @@ const slider = document.getElementById("slider");
 const volume = document.getElementById("volume");
 const audiobtnopen = document.getElementById("audiobtnopen");
 const audiobtnclose = document.getElementById("audiobtnclose");
+const virtualkeyboard = document.getElementById("virtual-keyboard");
+const showlevel = document.getElementById("showlevel");
+showlevel.innerHTML = "1";
 volume.innerHTML = "50";
 const loadingModelPromise = sess.loadModel("./train/model.onnx");
 loadingModelPromise.then(() => {
     console.log("model loaded");
     startBtn.addEventListener('click', function () {
         startscreen.style.display = "none";
+        virtualkeyboard.style.display = "inherit";
         game.show();
     });
 });

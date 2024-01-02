@@ -133,7 +133,17 @@ html, body {
     margin-left: 4%;
     width: 80%;
 }
-.virtual-keyboard{
+#virtual-keyboard{
     position: absolute;
     font-size: x-large;
+    display: none;
+    z-index: 2;
+}
+.levelshowdiv{
+    color: white;
+    display: flex;
+    font-weight: 1000;
+}
+#showlevel{
+    margin-left: 5%;
 }
