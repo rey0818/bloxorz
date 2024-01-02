@@ -12,6 +12,7 @@ const deltaPos = [ // 0: up, 1: down, 2: left, 3: right
 
 declare const onnx: any;
 const sess = new onnx.InferenceSession();
+const copy = <T>(arr: T[][]): T[][] => arr.map(e => e.slice());
 
 class State {
     x: number;
@@ -58,6 +59,33 @@ class Level {
         this.h = map[0].length;
     }
 
+    addPadding(): Level {
+        const newMap = [...Array(this.w + 2 * padding)].map(e => Array(this.h + 2 * padding).fill(0));
+        for (let x = padding; x < this.w + padding; x++)
+            for (let y = padding; y < this.h + padding; y++)
+                newMap[x][y] = this.map[x - padding][y - padding];
+        const newS = new State(this.s.x + padding, this.s.y + padding, this.s.dir);
+        const newE = new State(this.e.x + padding, this.e.y + padding, this.e.dir);
+        return new Level(newS, newE, newMap);
+    }
+
+    removePadding(): Level {
+        const newMap = [...Array(this.w - 2 * padding)].map(e => Array(this.h - 2 * padding).fill(0));
+        for (let x = padding; x < this.w - padding; x++)
+            for (let y = padding; y < this.h - padding; y++)
+                newMap[x - padding][y - padding] = this.map[x][y];
+        const newS = new State(this.s.x - padding, this.s.y - padding, this.s.dir);
+        const newE = new State(this.e.x - padding, this.e.y - padding, this.e.dir);
+        return new Level(newS, newE, newMap);
+    }
+
+    valid(s: State): boolean {
+        const occupied = s.occupied();
+        for (const [x, y] of occupied)
+            if (this.map[x][y] === 0) return false;
+        return true;
+    }
+
     async predict(s: State) {
         const arr = new Float32Array(this.w * this.h * 3).fill(0);
         for (let x = 0; x < this.w; x++) for (let y = 0; y < this.h; y++)
@@ -85,25 +113,16 @@ class Board {
     onCooldown: boolean;
     offsetX: number;
     offsetY: number;
-    width: number;
-    height: number;
     tilesize: number;
-    tiles: number[][];
     player: State;
-    startState: State;
-    endState: State;
     level: Level;
-    constructor(w: number, h: number, t: number, canvas: HTMLCanvasElement) {
-        w = w + 2 * padding;
-        h = h + 2 * padding;
-        this.width = w;
-        this.height = h;
+    constructor(t: number, canvas: HTMLCanvasElement) {
         this.tilesize = t;
         this.onCooldown = false;
 
         this.canvas = canvas;
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: this.canvas });
-        const cw = (w + h) * t, ch = cw * (this.canvas.height / this.canvas.width), near = 0.1, far = 100;
+        const cw = 24 * t, ch = cw * (this.canvas.height / this.canvas.width), near = 0.1, far = 100;
         this.camera = new THREE.OrthographicCamera(-cw / 2, cw / 2, ch / 2, -ch / 2, near, far);
         this.camera.position.set(3, 7, 9);
         this.camera.lookAt(0, 0, 0);
@@ -117,16 +136,9 @@ class Board {
         this.winsound = new Audio('music2.mp3');
     }
 
-    initMap(s: State, e: State, t: number[][]) {
-        this.player = new State(s.x + padding, s.y + padding, s.dir);
-        this.startState = new State(s.x + padding, s.y + padding, s.dir);
-        this.endState = new State(e.x + padding, e.y + padding, e.dir);
-        this.tiles = [...Array(this.width)].map(e => Array(this.height).fill(0));
-        for (let x = padding; x < this.width - padding; x++)
-            for (let y = padding; y < this.height - padding; y++)
-                this.tiles[x][y] = t[x - padding][y - padding];
-        this.tiles[this.endState.x][this.endState.y] = -1;
-        this.level = new Level(s.copy(), e.copy(), t);
+    initMap(lvl: Level) {
+        this.level = lvl.addPadding();
+        this.player = this.level.s.copy();
 
         this.tileMeshes = [];
         const tilegeometry = new THREE.BoxGeometry(this.tilesize * 0.9, this.tilesize * 0.4, this.tilesize * 0.9);
@@ -134,18 +146,19 @@ class Board {
         const tilematerial = new THREE.MeshPhongMaterial({ color: 0x44dd77 });
         const endmaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
         const playermaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-        this.offsetX = this.width * this.tilesize / 2;
-        this.offsetY = this.height * this.tilesize / 2;
+        this.offsetX = this.level.w * this.tilesize / 2;
+        this.offsetY = this.level.h * this.tilesize / 2;
         this.playerMesh = new THREE.Mesh(playergeometry, playermaterial);
         this.setPlayerPos(this.player, 0, 0, false);
-        for (let x = 0; x < this.width; x++) {
+        for (let x = 0; x < this.level.w; x++) {
             this.tileMeshes.push([]);
-            for (let y = 0; y < this.height; y++) {
-                if (this.tiles[x][y] === 0) {
+            for (let y = 0; y < this.level.h; y++) {
+                if (this.level.map[x][y] === 0) {
                     this.tileMeshes[x].push(null);
                     continue;
                 }
-                const cube = new THREE.Mesh(tilegeometry, this.tiles[x][y] === -1 ? endmaterial : tilematerial);
+                const isExit = this.level.e.x === x && this.level.e.y === y;
+                const cube = new THREE.Mesh(tilegeometry, isExit ? endmaterial : tilematerial);
                 cube.position.set(y * this.tilesize - this.offsetY, -tilegeometry.parameters.height / 2, x * this.tilesize - this.offsetX);
                 this.tileMeshes[x].push(cube);
                 this.scene.add(cube);
@@ -158,7 +171,7 @@ class Board {
         if (deg > 90) {
             this.player = this.player.move(dir);
             this.setPlayerPos(this.player, 0, 0, false);
-            if (!this.valid(this.player)) this.initfall(dir);
+            if (!this.level.valid(this.player)) this.initfall(dir);
             else {
                 this.onCooldown = false;
                 this.update();
@@ -213,7 +226,7 @@ class Board {
             const occupied = this.player.occupied();
             for (let i = 0; i < occupied.length; i++) {
                 const [x, y] = occupied[i];
-                if (this.tiles[x][y] === 1) {
+                if (this.level.map[x][y] === 1) {
                     if (i === 0) this.trip((this.player.dir - 1) * 2 + 1, 0);
                     else this.trip((this.player.dir - 1) * 2, 0);
                     return;
@@ -283,7 +296,7 @@ class Board {
     }
 
     update() {
-        if (this.player.isEqual(this.endState)) {
+        if (this.player.isEqual(this.level.e)) {
             this.onCooldown = true;
             this.winsound.play();
             alert("You won! Good Job.");
@@ -294,7 +307,7 @@ class Board {
     restart() {
         this.diedSound.play();
         document.getElementById("gameover").style.display = "grid";
-        this.player = this.startState.copy();
+        this.player = this.level.s.copy();
         this.setPlayerPos(this.player, 0, 0, false);
     }
 
@@ -308,13 +321,6 @@ class Board {
 
     render() {
         this.renderer.render(this.scene, this.camera);
-    }
-
-    valid(s: State): boolean {
-        const occupied = s.occupied();
-        for (const [x, y] of occupied)
-            if (this.tiles[x][y] === 0) return false;
-        return true;
     }
 
     volumechange(e: number) {
@@ -366,8 +372,8 @@ class Game {
     }
 
     updateMap(index: number) {
-        this.board = new Board(10, 10, 0.7, this.canvas);
-        this.board.initMap(this.levels[index].s, this.levels[index].e, this.levels[index].map);
+        this.board = new Board(0.7, this.canvas);
+        this.board.initMap(this.levels[index]);
         this.board.render();
     }
 
