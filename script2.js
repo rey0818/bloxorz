@@ -508,3 +508,18 @@ audiobtnopen.addEventListener("click", function () {
 audiobtnclose.addEventListener("click", function () {
     document.getElementById("Audio").style.display = "none";
 });
+document.querySelector(".left-btn").addEventListener("click", function () {
+    game.board.move("ArrowLeft");
+});
+document.querySelector(".right-btn").addEventListener("click", function () {
+    game.board.move("ArrowRight");
+});
+document.querySelector(".up-btn").addEventListener("click", function () {
+    game.board.move("ArrowUp");
+});
+document.querySelector(".down-btn").addEventListener("click", function () {
+    game.board.move("ArrowDown");
+});
+document.querySelector(".ai-btn").addEventListener("click", function () {
+    game.board.predictMove();
+});

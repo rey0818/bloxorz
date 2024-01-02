@@ -133,3 +133,7 @@ html, body {
     margin-left: 4%;
     width: 80%;
 }
+.virtual-keyboard{
+    position: absolute;
+    font-size: x-large;
+}
