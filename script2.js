@@ -44,12 +44,14 @@ class Level {
     w;
     h;
     map;
+    curMapState; // A binary representation of the map state
     constructor(s, e, map) {
         this.map = map;
         this.s = s;
         this.e = e;
         this.w = map.length;
         this.h = map[0].length;
+        this.curMapState = 0;
     }
     addPadding() {
         const newMap = [...Array(this.w + 2 * padding)].map(e => Array(this.h + 2 * padding).fill(0));
@@ -69,10 +71,49 @@ class Level {
         const newE = new State(this.e.x - padding, this.e.y - padding, this.e.dir);
         return new Level(newS, newE, newMap);
     }
+    toggleMapState(id) {
+        this.curMapState ^= 1 << id;
+        const ret = [];
+        for (let x = 0; x < this.w; x++)
+            for (let y = 0; y < this.h; y++)
+                if (this.map[x][y] === id + 2)
+                    ret.push([x, y]);
+        return ret;
+    }
+    resetMapState() {
+        const ret = [];
+        while (this.curMapState !== 0) {
+            const id = Math.floor(Math.log2(this.curMapState));
+            ret.push(...this.toggleMapState(id));
+        }
+        return ret;
+    }
+    getButtonID(x, y) {
+        if (this.map[x][y] >= -1)
+            return -1;
+        return -this.map[x][y] - 2;
+    }
+    isBlock(x, y) {
+        if (this.map[x][y] === 0)
+            return false;
+        if (this.map[x][y] <= 1)
+            return true;
+        return (this.curMapState & (1 << (this.map[x][y] - 2))) > 0;
+    }
+    isPermanentBlock(x, y) {
+        return this.map[x][y] === 1 || this.map[x][y] <= -2;
+    }
+    isOnButton(s) {
+        const occ = s.occupied();
+        for (const [x, y] of occ)
+            if (this.getButtonID(x, y) !== -1)
+                return this.getButtonID(x, y);
+        return -1;
+    }
     valid(s) {
         const occupied = s.occupied();
         for (const [x, y] of occupied)
-            if (this.map[x][y] === 0)
+            if (!this.isBlock(x, y))
                 return false;
         return true;
     }
@@ -133,7 +174,9 @@ class Board {
         this.tileMeshes = [];
         const tilegeometry = new THREE.BoxGeometry(this.tilesize * 0.9, this.tilesize * 0.4, this.tilesize * 0.9);
         const playergeometry = new THREE.BoxGeometry(this.tilesize, this.tilesize * 2, this.tilesize);
-        const tilematerial = new THREE.MeshPhongMaterial({ color: 0x44dd77 });
+        const permtilematerial = new THREE.MeshPhongMaterial({ color: 0x44dd77 });
+        const temptilematerial = new THREE.MeshPhongMaterial({ color: 0xaaaaaa });
+        const buttonmaterial = new THREE.MeshPhongMaterial({ color: 0xffaa00 });
         const endmaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
         const playermaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
         this.offsetX = this.level.w * this.tilesize / 2;
@@ -143,15 +186,15 @@ class Board {
         for (let x = 0; x < this.level.w; x++) {
             this.tileMeshes.push([]);
             for (let y = 0; y < this.level.h; y++) {
-                if (this.level.map[x][y] === 0) {
-                    this.tileMeshes[x].push(null);
-                    continue;
-                }
                 const isExit = this.level.e.x === x && this.level.e.y === y;
-                const cube = new THREE.Mesh(tilegeometry, isExit ? endmaterial : tilematerial);
+                const isPerm = this.level.isPermanentBlock(x, y);
+                const isButton = this.level.getButtonID(x, y) !== -1;
+                const cube = new THREE.Mesh(tilegeometry, isButton ? buttonmaterial : isExit ? endmaterial : isPerm ? permtilematerial : temptilematerial);
                 cube.position.set(y * this.tilesize - this.offsetY, -tilegeometry.parameters.height / 2, x * this.tilesize - this.offsetX);
                 this.tileMeshes[x].push(cube);
                 this.scene.add(cube);
+                if (!this.level.isBlock(x, y))
+                    cube.visible = false;
             }
         }
         this.scene.add(this.playerMesh);
@@ -165,6 +208,7 @@ class Board {
             else {
                 this.onCooldown = false;
                 this.update();
+                this.render();
             }
             return;
         }
@@ -220,7 +264,7 @@ class Board {
             const occupied = this.player.occupied();
             for (let i = 0; i < occupied.length; i++) {
                 const [x, y] = occupied[i];
-                if (this.level.map[x][y] === 1) {
+                if (this.level.isBlock(x, y)) {
                     if (i === 0)
                         this.trip((this.player.dir - 1) * 2 + 1, 0);
                     else
@@ -269,6 +313,7 @@ class Board {
         if (vel[1] < -2) {
             this.onCooldown = false;
             this.restart();
+            this.render();
             return;
         }
         this.playerMesh.position.x += vel[2];
@@ -297,6 +342,12 @@ class Board {
         console.log(details);
     }
     update() {
+        const id = this.level.isOnButton(this.player);
+        if (id !== -1) {
+            const affected = this.level.toggleMapState(id);
+            for (const [x, y] of affected)
+                this.tileMeshes[x][y].visible = !this.tileMeshes[x][y].visible;
+        }
         if (this.player.isEqual(this.level.e)) {
             this.onCooldown = true;
             this.winsound.play();
@@ -309,6 +360,9 @@ class Board {
         document.getElementById("gameover").style.display = "grid";
         this.player = this.level.s.copy();
         this.setPlayerPos(this.player, 0, 0, false);
+        const affected = this.level.resetMapState();
+        for (const [x, y] of affected)
+            this.tileMeshes[x][y].visible = !this.tileMeshes[x][y].visible;
     }
     move(key) {
         let dir = dirNames.indexOf(key.substring(5));
@@ -373,7 +427,7 @@ class Game {
     nextLevel() {
         this.curLevel = (this.curLevel + 1) % this.levels.length;
         this.updateMap(this.curLevel);
-        showlevel.innerHTML = this.curLevel+1;
+        showlevel.innerHTML = (this.curLevel + 1).toString();
     }
     show() {
         if (this.shown)
@@ -392,15 +446,15 @@ class Game {
 }
 const levels = [
     new Level(new State(0, 3, 0), new State(9, 6, 0), [
-        [1, 1, 1, 1, 0, 0, 1, 1, 1, 1],
+        [1, -2, 1, 1, 2, 2, 1, 1, 1, 1],
         [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, -3, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
         [1, 0, 1, 0, 1, 1, 0, 1, 0, 1],
         [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
         [1, 0, 1, 1, 1, 1, 1, 1, 0, 1],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 3, 3, 3, 3, 3, 3, 3, 3, 1],
         [1, 1, 1, 1, 0, 0, 1, 1, 1, 1]
     ]),
     new Level(new State(7, 7, 0), new State(2, 8, 0), [
