@@ -25,6 +25,7 @@ class State {
     }
 
     move(d: number): State {
+        showstep.innerHTML = (parseInt(showstep.innerHTML) + 1).toString();
         const [dx, dy, dir] = deltaPos[this.dir][d];
         return new State(this.x + dx, this.y + dy, dir);
     }
@@ -347,13 +348,16 @@ class Board {
         if (this.player.isEqual(this.level.e)) {
             this.onCooldown = true;
             this.winsound.play();
+            showstep.innerHTML = "0";
             alert("You won! Good Job.");
             setTimeout(() => { game.nextLevel(); }, 0);
         }
     }
 
     restart() {
+        showstep.innerHTML = "0";
         this.diedSound.play();
+        virtualkeyboard.style.display = "none";
         document.getElementById("gameover").style.display = "grid";
         this.player = this.level.s.copy();
         this.setPlayerPos(this.player, 0, 0, false);
@@ -525,6 +529,8 @@ const audiobtnopen = document.getElementById("audiobtnopen");
 const audiobtnclose = document.getElementById("audiobtnclose");
 const virtualkeyboard = document.getElementById("virtual-keyboard");
 const showlevel = document.getElementById("showlevel");
+const showstep = document.getElementById("showstep");
+showstep.innerHTML = "0";
 showlevel.innerHTML = "1";
 volume.innerHTML = "50";
 
@@ -563,6 +569,7 @@ homebtn2.addEventListener("click", function () {
 document.addEventListener("keydown", function (e) {
     if ((e.key === 'Enter' || e.key === ' ') && document.getElementById("gameover").style.display === "grid") {
         document.getElementById("gameover").style.display = "none";
+        virtualkeyboard.style.display = "inherit";
         game.show();
     }
     else if (e.key == ';') {

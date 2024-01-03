@@ -139,11 +139,11 @@ html, body {
     display: none;
     z-index: 2;
 }
-.levelshowdiv{
+.levelshowdiv,.stepshowdiv{
     color: white;
     display: flex;
     font-weight: 1000;
 }
-#showlevel{
+#showlevel,#showstep{
     margin-left: 5%;
 }
