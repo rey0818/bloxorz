@@ -415,6 +415,7 @@ class Game {
                 this.show();
                 this.updateMap(i);
                 this.dialogElement.close();
+                showstep.innerHTML = "0";
             });
             document.querySelector('.lvl-container').appendChild(btn);
         }
@@ -579,6 +580,7 @@ document.addEventListener("keydown", function (e) {
 
 tryagain.addEventListener("click", function () {
     document.getElementById("gameover").style.display = "none";
+    virtualkeyboard.style.display = "inherit";
     game.show();
 });
 
