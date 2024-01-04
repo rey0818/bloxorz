@@ -25,7 +25,6 @@ class State {
     }
 
     move(d: number): State {
-        showstep.innerHTML = (parseInt(showstep.innerHTML) + 1).toString();
         const [dx, dy, dir] = deltaPos[this.dir][d];
         return new State(this.x + dx, this.y + dy, dir);
     }
@@ -370,6 +369,7 @@ class Board {
         if (dir === -1) return;
         if (this.onCooldown) return;
         this.onCooldown = true;
+        showstep.innerHTML = (parseInt(showstep.innerHTML) + 1).toString();
         this.setPlayerPos(this.player.copy(), dir, 0);
     }
 
